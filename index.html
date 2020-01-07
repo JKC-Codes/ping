@@ -17,6 +17,13 @@
 		body {
 			width: 90vw;
 			height: 90vh;
+			border: 10px ridge white;
+		}
+
+		canvas {
+			width: 100%;
+			height: 100%;
+			background: black;
 			border: 1px solid white;
 		}
 	</style>
@@ -26,11 +33,51 @@
 		<!-- <button>Start</button> -->
 	</header>
 	<main>
-		<canvas id="game">
+		<canvas id="game" width="2000" height="1000">
 			Your browser is not compatible with this game.
 		</canvas>
 	</main>
 	<script>
+		const canvas = document.querySelector('#game');
+		const ctx = canvas.getContext('2d');
+		const cw = canvas.getAttribute('width');
+		const ch = canvas.getAttribute('height');
+		const pixel = cw / 1000;
+		function pxl(multiplier) {
+			return pixel * multiplier;
+		}
+
+		// Draw centre divider
+		class Divider {
+			constructor() {
+				this.draw();
+			}
+
+			draw() {
+				let x = cw * 0.5 + (ctx.lineWidth / 2);
+				let y = pxl(20);
+				let lineLength = pxl(20);
+				let gapLength = lineLength;
+
+				ctx.save();
+				ctx.strokeStyle = 'white';
+				ctx.lineWidth = pxl(10);
+
+				function createNet() {
+					ctx.moveTo(x, y);
+					y += lineLength;
+					ctx.lineTo(x, y);
+					y += gapLength;
+				}
+				while(y + lineLength < ch) {
+					createNet();
+				}
+				ctx.stroke();
+				ctx.restore();
+			}
+		}
+
+		new Divider;
 	</script>
 </body>
 </html>
