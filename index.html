@@ -7,61 +7,61 @@
 	<link rel="icon" href="/favicon.png" type="image/png">
 	<style>
 		html {
-			height: 100vh;
+			height: 100%;
+		}
+
+		body {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 1rem;
+			height: 100%;
 			background-color: black;
+		}
+
+		main {
+			width: 100%;
+			height: 100%;
 			display: flex;
 			justify-content: center;
 			align-items: center;
 		}
 
-		body {
-			width: 90vw;
-			height: 90vh;
-			border: 10px ridge white;
+		#canvasContainer {
+			width: 100%;
+			height: 100%;
 		}
 
 		canvas {
-			width: 100%;
-			height: 100%;
-			background: black;
 			border: 1px solid white;
 		}
 	</style>
 </head>
 <body>
-	<header id="options">
-		<!-- <button>Start</button> -->
-	</header>
 	<main>
-		<canvas id="game" width="2000" height="1000">
-			Your browser is not compatible with this game.
-		</canvas>
+		<div id="canvasContainer">
+			<canvas id="game" width="2" height="1">
+				Your browser is not compatible with this game.
+			</canvas>
+		</div>
 	</main>
 	<script>
-		const canvas = document.querySelector('#game');
+
+		const canvasContainer = document.querySelector('#canvasContainer');
+		const canvas = canvasContainer.querySelector('#game');
 		const ctx = canvas.getContext('2d');
-		const cw = canvas.getAttribute('width');
-		const ch = canvas.getAttribute('height');
-		const pixel = cw / 1000;
-		function pxl(multiplier) {
-			return pixel * multiplier;
-		}
+		const canvasWidth = 2000;
+		const canvasHeight = 1000;
+		const canvasRatio = canvasWidth / canvasHeight;
 
-		// Draw centre divider
-		class Divider {
-			constructor() {
-				this.draw();
-			}
-
-			draw() {
-				let x = cw * 0.5 + (ctx.lineWidth / 2);
-				let y = pxl(20);
-				let lineLength = pxl(20);
+		const Net = {
+			draw: function draw() {
+				let lineLength = canvasHeight / 50;
 				let gapLength = lineLength;
+				let x = canvasWidth * 0.5 + (ctx.lineWidth / 2);
+				let y = lineLength / 2;
 
 				ctx.save();
-				ctx.strokeStyle = 'white';
-				ctx.lineWidth = pxl(10);
+				ctx.lineWidth = 5;
 
 				function createNet() {
 					ctx.moveTo(x, y);
@@ -69,15 +69,36 @@
 					ctx.lineTo(x, y);
 					y += gapLength;
 				}
-				while(y + lineLength < ch) {
+				while(y < canvasHeight) {
 					createNet();
 				}
 				ctx.stroke();
 				ctx.restore();
 			}
 		}
+		const net = Object.create(Net);
 
-		new Divider;
+
+		function resizeCanvas() {
+			if(canvasContainer.clientWidth / 2 > canvasContainer.clientHeight) {
+				canvas.height = canvasContainer.clientHeight;
+				canvas.width = canvas.height * canvasRatio;
+			}
+			else {
+				canvas.width = canvasContainer.clientWidth;
+				canvas.height = canvas.width / canvasRatio;
+			}
+
+			ctx.scale(canvas.width/canvasWidth, canvas.height/canvasHeight);
+			ctx.strokeStyle = 'white';
+			ctx.fillStyle = 'white';
+
+			net.draw();
+		}
+		window.addEventListener('resize', function() {
+			resizeCanvas();
+		})
+		resizeCanvas();
 	</script>
 </body>
 </html>
