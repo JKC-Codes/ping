@@ -49,19 +49,22 @@
 		const canvasContainer = document.querySelector('#canvasContainer');
 		const canvas = canvasContainer.querySelector('#game');
 		const ctx = canvas.getContext('2d');
-		const canvasWidth = 2000;
-		const canvasHeight = 1000;
-		const canvasRatio = canvasWidth / canvasHeight;
+		const canvasScale = 1000;
+		const canvasRatio = 2;
+		const canvasWidth = canvasScale * canvasRatio;
+		const canvasHeight = canvasScale;
+
 
 		const Net = {
 			draw: function draw() {
-				let lineLength = canvasHeight / 50;
-				let gapLength = lineLength;
-				let x = canvasWidth * 0.5 + (ctx.lineWidth / 2);
-				let y = lineLength / 2;
-
 				ctx.save();
+				ctx.beginPath();
 				ctx.lineWidth = 5;
+
+				const lineLength = canvasHeight / 50;
+				const gapLength = lineLength;
+				const x = canvasWidth * 0.5;
+				let y = lineLength / 2;
 
 				function createNet() {
 					ctx.moveTo(x, y);
@@ -79,8 +82,44 @@
 		const net = Object.create(Net);
 
 
+		const Paddle = {
+			draw: function draw() {
+				const w = 25;
+				const h = 200;
+				let x = 25;
+				let y = (canvasHeight - h) / 2;
+
+				ctx.save();
+				if(this.side === 'left') {
+					ctx.translate(x, y);
+				}
+				else if(this.side === 'right') {
+					ctx.translate(canvasWidth - x - w, y);
+				}
+				ctx.fillRect(0, 0, w, h);
+				ctx.restore();
+			}
+		}
+		const p1 = Object.create(Paddle, {side: {value: 'left'}});
+		const p2 = Object.create(Paddle, {side: {value: 'right'}});
+
+
+		const Ball = {
+			draw: function draw() {
+				const h = 50;
+				const w = 50;
+				let x = (canvasWidth / 2) - (w / 2);
+				let y = (canvasHeight / 2) - (h / 2);
+				ctx.save;
+				ctx.fillRect(x, y, w, h);
+				ctx.restore;
+			}
+		}
+		const ball = Object.create(Ball);
+
+
 		function resizeCanvas() {
-			if(canvasContainer.clientWidth / 2 > canvasContainer.clientHeight) {
+			if(canvasContainer.clientWidth / canvasRatio > canvasContainer.clientHeight) {
 				canvas.height = canvasContainer.clientHeight;
 				canvas.width = canvas.height * canvasRatio;
 			}
@@ -89,15 +128,25 @@
 				canvas.height = canvas.width / canvasRatio;
 			}
 
-			ctx.scale(canvas.width/canvasWidth, canvas.height/canvasHeight);
+			ctx.scale(canvas.width / canvasScale / canvasRatio, canvas.height / canvasScale);
 			ctx.strokeStyle = 'white';
 			ctx.fillStyle = 'white';
 
-			net.draw();
+			refresh();
 		}
+
+		function refresh() {
+			ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+			net.draw();
+			p1.draw();
+			p2.draw();
+			ball.draw();
+		}
+
 		window.addEventListener('resize', function() {
 			resizeCanvas();
 		})
+
 		resizeCanvas();
 	</script>
 </body>
