@@ -7,56 +7,65 @@
 	<link rel="icon" href="/favicon.png" type="image/png">
 	<style>
 		html {
-			height: 100%;
+			width: 100%;
+			height: 100vh;
 		}
 
 		body {
 			box-sizing: border-box;
-			margin: 0;
-			padding: 1rem;
-			height: 100%;
-			background-color: black;
-		}
-
-		main {
 			width: 100%;
 			height: 100%;
+			margin: 0;
+			padding: 1rem;
+			background-color: black;
 			display: flex;
+			flex-direction: column;
 			justify-content: center;
-			align-items: center;
 		}
 
 		#canvasContainer {
+			position: relative;
 			width: 100%;
 			height: 100%;
 		}
 
 		canvas {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
 			border: 1px solid white;
+			/* cursor: none; */
 		}
 	</style>
 </head>
 <body>
-	<main>
-		<div id="canvasContainer">
-			<canvas id="game" width="2" height="1">
-				Your browser is not compatible with this game.
-			</canvas>
-		</div>
-	</main>
+	<div id="canvasContainer">
+		<canvas id="backdrop" width="2" height="1">
+			Sorry, your browser is not compatible with this game.
+		</canvas>
+		<canvas id="game" width="2" height="1">
+			Sorry, your browser is not compatible with this game.
+		</canvas>
+	</div>
 	<script>
 
 		const canvasContainer = document.querySelector('#canvasContainer');
 		const canvas = canvasContainer.querySelector('#game');
+		const bCanvas = canvasContainer.querySelector('#backdrop');
 		const ctx = canvas.getContext('2d');
+		const bctx = bCanvas.getContext('2d');
 		const canvasScale = 1000;
 		const canvasRatio = 2;
 		const canvasWidth = canvasScale * canvasRatio;
 		const canvasHeight = canvasScale;
+		let offsetX;
+		let offsetY;
 
 
 		const Net = {
 			draw: function draw() {
+				let ctx = bctx;
 				ctx.save();
 				ctx.beginPath();
 				ctx.lineWidth = 5;
@@ -83,60 +92,86 @@
 
 
 		const Paddle = {
+			init: function init(side) {
+				this.w = 25;
+				this.h = 200;
+				const baseX = 25;
+				if(side === 'left') {
+					this.x = baseX;
+				}
+				else if(side === 'right') {
+					this.x = canvasWidth - baseX - this.w;
+					canvas.addEventListener('mousemove', this.move.bind(this));
+				}
+				this.y = (canvasHeight - this.h) / 2;
+			},
 			draw: function draw() {
-				const w = 25;
-				const h = 200;
-				let x = 25;
-				let y = (canvasHeight - h) / 2;
+				ctx.fillRect(this.x, this.y, this.w, this.h);
+			},
+			move: function move(event) {
+				const mouse = (event.y - offsetY);
+				const pixel = canvasScale / canvas.clientHeight;
+				const offset = this.h / 2;
+				let newPosition = mouse * pixel - offset;
 
-				ctx.save();
-				if(this.side === 'left') {
-					ctx.translate(x, y);
+				if(newPosition < 0) {
+					newPosition = 0;
 				}
-				else if(this.side === 'right') {
-					ctx.translate(canvasWidth - x - w, y);
+				else if (newPosition > canvasScale - this.h) {
+					newPosition = canvasScale - this.h;
 				}
-				ctx.fillRect(0, 0, w, h);
-				ctx.restore();
+
+				if(newPosition !== this.y) {
+					ctx.clearRect(this.x-pixel, this.y-pixel, this.w+ (pixel * 2), this.h+ (pixel * 2));
+					this.y = newPosition;
+					requestAnimationFrame(this.draw.bind(this));
+				}
 			}
 		}
-		const p1 = Object.create(Paddle, {side: {value: 'left'}});
-		const p2 = Object.create(Paddle, {side: {value: 'right'}});
+		const p1 = Object.create(Paddle);
+		p1.init('left');
+		const p2 = Object.create(Paddle);
+		p2.init('right');
 
 
 		const Ball = {
+			init: function init() {
+				this.h = 50;
+				this.w = 50;
+				this.x = (canvasWidth / 2) - (this.w / 2);
+				this.y = (canvasHeight / 2) - (this.h / 2);
+			},
 			draw: function draw() {
-				const h = 50;
-				const w = 50;
-				let x = (canvasWidth / 2) - (w / 2);
-				let y = (canvasHeight / 2) - (h / 2);
-				ctx.save;
-				ctx.fillRect(x, y, w, h);
-				ctx.restore;
+				ctx.fillRect(this.x, this.y, this.w, this.h);
 			}
 		}
 		const ball = Object.create(Ball);
+		ball.init();
 
 
-		function resizeCanvas() {
-			if(canvasContainer.clientWidth / canvasRatio > canvasContainer.clientHeight) {
-				canvas.height = canvasContainer.clientHeight;
-				canvas.width = canvas.height * canvasRatio;
+		function resizeCanvas(ctx, canvas) {
+			const sizes = canvasContainer.getBoundingClientRect();
+
+			if(sizes.width / canvasRatio <= sizes.height) {
+				canvas.width = sizes.width;
+				canvas.height = sizes.width / canvasRatio;
 			}
 			else {
-				canvas.width = canvasContainer.clientWidth;
-				canvas.height = canvas.width / canvasRatio;
+				canvas.width = sizes.height * canvasRatio;
+				canvas.height = sizes.height;
 			}
 
 			ctx.scale(canvas.width / canvasScale / canvasRatio, canvas.height / canvasScale);
 			ctx.strokeStyle = 'white';
 			ctx.fillStyle = 'white';
 
-			refresh();
+			offsetX = (window.innerWidth - canvas.clientWidth) / 2;
+			offsetY = (window.innerHeight - canvas.clientHeight) / 2;
 		}
 
 		function refresh() {
 			ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+			bctx.clearRect(0, 0, canvasWidth, canvasHeight);
 			net.draw();
 			p1.draw();
 			p2.draw();
@@ -144,10 +179,13 @@
 		}
 
 		window.addEventListener('resize', function() {
-			resizeCanvas();
+			resizeCanvas(ctx, canvas);
+			resizeCanvas(bctx, bCanvas);
+			refresh();
 		})
-
-		resizeCanvas();
+		resizeCanvas(ctx, canvas);
+		resizeCanvas(bctx, bCanvas);
+		refresh();
 	</script>
 </body>
 </html>
