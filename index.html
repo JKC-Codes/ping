@@ -35,15 +35,12 @@
 			left: 50%;
 			transform: translate(-50%, -50%);
 			border: 1px solid white;
-			/* cursor: none; */
+			cursor: none;
 		}
 	</style>
 </head>
 <body>
 	<div id="canvasContainer">
-		<canvas id="backdrop" width="2" height="1">
-			Sorry, your browser is not compatible with this game.
-		</canvas>
 		<canvas id="game" width="2" height="1">
 			Sorry, your browser is not compatible with this game.
 		</canvas>
@@ -52,9 +49,7 @@
 
 		const canvasContainer = document.querySelector('#canvasContainer');
 		const canvas = canvasContainer.querySelector('#game');
-		const bCanvas = canvasContainer.querySelector('#backdrop');
 		const ctx = canvas.getContext('2d');
-		const bctx = bCanvas.getContext('2d');
 		const canvasScale = 1000;
 		const canvasRatio = 2;
 		const canvasWidth = canvasScale * canvasRatio;
@@ -65,7 +60,6 @@
 
 		const Net = {
 			draw: function draw() {
-				let ctx = bctx;
 				ctx.save();
 				ctx.beginPath();
 				ctx.lineWidth = 5;
@@ -122,9 +116,8 @@
 				}
 
 				if(newPosition !== this.y) {
-					ctx.clearRect(this.x-pixel, this.y-pixel, this.w+ (pixel * 2), this.h+ (pixel * 2));
 					this.y = newPosition;
-					requestAnimationFrame(this.draw.bind(this));
+					refresh();
 				}
 			}
 		}
@@ -140,9 +133,42 @@
 				this.w = 50;
 				this.x = (canvasWidth / 2) - (this.w / 2);
 				this.y = (canvasHeight / 2) - (this.h / 2);
+				const dx = Math.random() * (1 - 0.67) + 0.67;
+				const dy = 1 - dx;
+				function randomDirection() {
+					return Math.round(Math.random()) ? 1 : -1;
+				}
+				this.dx = dx * randomDirection();
+				this.dy = dy * randomDirection();
+				this.speed = 20;
+				this.move();
 			},
 			draw: function draw() {
 				ctx.fillRect(this.x, this.y, this.w, this.h);
+			},
+			move: function move() {
+				this.x += this.dx * this.speed;
+				this.y += this.dy * this.speed;
+				if(this.y < 0) {
+					this.y = 0;
+					this.dy = this.dy * -1;
+				}
+				else if(this.y > canvasHeight - this.h) {
+					this.y = canvasHeight - this.h;
+					this.dy = this.dy * -1;
+				}
+				// TEMPORARY
+				else if(this.x < 0) {
+					this.x = 0;
+					this.dx = this.dx * -1;
+				}
+				else if(this.x > canvasWidth - this.w) {
+					this.x = canvasWidth - this.w;
+					this.dx = this.dx * -1;
+				}
+				// END TEMPORARY
+				refresh();
+				requestAnimationFrame(this.move.bind(this));
 			}
 		}
 		const ball = Object.create(Ball);
@@ -161,7 +187,9 @@
 				canvas.height = sizes.height;
 			}
 
-			ctx.scale(canvas.width / canvasScale / canvasRatio, canvas.height / canvasScale);
+			const scaleX = canvas.width / canvasScale / canvasRatio;
+			const scaleY = canvas.height / canvasScale;
+			ctx.scale(scaleX, scaleY);
 			ctx.strokeStyle = 'white';
 			ctx.fillStyle = 'white';
 
@@ -170,21 +198,20 @@
 		}
 
 		function refresh() {
-			ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-			bctx.clearRect(0, 0, canvasWidth, canvasHeight);
-			net.draw();
-			p1.draw();
-			p2.draw();
-			ball.draw();
+			requestAnimationFrame(function() {
+				ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+				net.draw();
+				p1.draw();
+				p2.draw();
+				ball.draw();
+			})
 		}
 
 		window.addEventListener('resize', function() {
 			resizeCanvas(ctx, canvas);
-			resizeCanvas(bctx, bCanvas);
 			refresh();
 		})
 		resizeCanvas(ctx, canvas);
-		resizeCanvas(bctx, bCanvas);
 		refresh();
 	</script>
 </body>
