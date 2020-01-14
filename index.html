@@ -87,17 +87,21 @@
 
 		const Paddle = {
 			init: function init(side) {
+				this.side = side;
 				this.w = 25;
 				this.h = 200;
+				this.y = (canvasHeight - this.h) / 2;
 				const baseX = 25;
-				if(side === 'left') {
+				if(this.side === 'left') {
 					this.x = baseX;
+					this.dy = +1;
+					this.speed = 10;
+					this.move();
 				}
-				else if(side === 'right') {
+				else if(this.side === 'right') {
 					this.x = canvasWidth - baseX - this.w;
 					canvas.addEventListener('mousemove', this.move.bind(this));
 				}
-				this.y = (canvasHeight - this.h) / 2;
 			},
 
 			draw: function draw() {
@@ -105,21 +109,38 @@
 			},
 
 			move: function move(event) {
-				const mouse = (event.y - offsetY);
-				const pixel = canvasScale / canvas.clientHeight;
-				const offset = this.h / 2;
-				let newPosition = (mouse * pixel) - offset;
+				// Player controlled paddle
+				if(this.side === 'right') {
+					const mouse = (event.y - offsetY);
+					const pixel = canvasScale / canvas.clientHeight;
+					const offset = this.h / 2;
+					let newPosition = (mouse * pixel) - offset;
 
-				if(newPosition < 0) {
-					newPosition = 0;
-				}
-				else if (newPosition > canvasScale - this.h) {
-					newPosition = canvasScale - this.h;
-				}
+					if(newPosition < 0) {
+						newPosition = 0;
+					}
+					else if (newPosition > canvasScale - this.h) {
+						newPosition = canvasScale - this.h;
+					}
 
-				if(newPosition !== this.y) {
-					this.y = newPosition;
+					if(newPosition !== this.y) {
+						this.y = newPosition;
+						refresh();
+					}
+				}
+				// AI controlled paddle
+				else {
+					this.y += this.dy * this.speed;
+					if(this.y < 0) {
+						this.y = 0;
+						this.dy *= -1;
+					}
+					else if (this.y + this.h > canvasScale) {
+						this.y = canvasScale - this.h;
+						this.dy *= -1;
+					}
 					refresh();
+					requestAnimationFrame(this.move.bind(this));
 				}
 			}
 		}
@@ -143,7 +164,7 @@
 				}
 				this.dx = dx * randomDirection();
 				this.dy = dy * randomDirection();
-				this.speed = 10;
+				this.speed = 20;
 				this.move();
 			},
 
