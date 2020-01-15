@@ -209,14 +209,18 @@
 
 				// point scored
 				if(this.x < 0) {
-					// TEMPORARY - need to update score and reset here
+					scoreboard.score[1] += 1;
 					this.x = 0;
-					this.dx = this.dx * -1;
+					this.draw();
+					setTimeout(this.init.bind(this),1000)
+					return;
 				}
 				else if(this.x > canvasWidth - this.w) {
-					// TEMPORARY - need to update score and reset here
+					scoreboard.score[0] += 1;
 					this.x = canvasWidth - this.w;
-					this.dx = this.dx * -1;
+					this.draw();
+					setTimeout(this.init.bind(this),1000)
+					return;
 				}
 				refresh();
 				requestAnimationFrame(this.move.bind(this));
@@ -224,6 +228,27 @@
 		}
 		const ball = Object.create(Ball);
 		ball.init();
+
+
+		const Scoreboard = {
+			init: function init() {
+				this.x = canvasWidth / 2;
+				this.space = 50;
+				this.y = 15;
+				this.score = [0,0];
+			},
+
+			draw: function draw() {
+				ctx.save();
+				ctx.textAlign = 'right';
+				ctx.fillText(this.score[0], this.x - this.space, this.y);
+				ctx.textAlign = 'left';
+				ctx.fillText(this.score[1], this.x + this.space, this.y);
+				ctx.restore();
+			}
+		}
+		const scoreboard = Object.create(Scoreboard);
+		scoreboard.init();
 
 
 		function resizeCanvas(ctx, canvas) {
@@ -243,6 +268,8 @@
 			ctx.scale(scaleX, scaleY);
 			ctx.strokeStyle = 'white';
 			ctx.fillStyle = 'white';
+			ctx.textBaseline = 'top';
+			ctx.font = '150px sans-serif';
 
 			offsetX = (window.innerWidth - canvas.clientWidth) / 2;
 			offsetY = (window.innerHeight - canvas.clientHeight) / 2;
@@ -255,6 +282,7 @@
 				p1.draw();
 				p2.draw();
 				ball.draw();
+				scoreboard.draw();
 			})
 		}
 
