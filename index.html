@@ -139,7 +139,38 @@
 				}
 				// AI controlled paddle
 				else {
-					this.y += this.dy * this.speed;
+
+					if(ball.dx < 0) {
+						if(!this.prediction) {
+							const distance = ball.x - (this.x + this.w);
+							const speed = (ball.dx * ball.speed) * -1;
+							const time = Math.ceil(distance / speed);
+							const frame = ball.dy * ball.speed;
+							const delta = time * frame;
+							const bottomEdge = canvasHeight - ball.h;
+
+							function predictImpact(offset, distance) {
+								if(offset + distance < 0) {
+									const newDistance = (distance + offset) * -1;
+									return predictImpact(0, newDistance);
+								}
+								else if(offset + distance > bottomEdge) {
+									const newDistance = (distance - (bottomEdge - offset)) * -1;
+									return predictImpact(bottomEdge, newDistance);
+								}
+								return offset + distance;
+							}
+							this.prediction = predictImpact(ball.y, delta);
+						}
+						else {
+							this.y = this.prediction; // TEMPORARY
+						}
+					}
+					else if(ball.dx > 0) {
+						this.prediction = null;
+						this.y += this.dy * this.speed;
+					}
+
 					if(this.y < 0) {
 						this.y = 0;
 						this.dy *= -1;
@@ -216,11 +247,11 @@
 				// point scored
 				if(this.x < 0) {
 					this.x = 0;
-					pointScored('p2');
+					// pointScored('p2');
 				}
 				else if(this.x > canvasWidth - this.w) {
 					this.x = canvasWidth - this.w;
-					pointScored('p1');
+					// pointScored('p1');
 				}
 			}
 		};
@@ -284,8 +315,8 @@
 
 		function animate() {
 			if(!game.isPaused) {
-				ball.move();
 				p1.move();
+				ball.move();
 				refresh();
 				requestAnimationFrame(animate);
 			}
