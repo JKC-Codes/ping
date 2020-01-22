@@ -67,7 +67,9 @@
 				game.isPaused = false;
 				animate();
 			},
-			scoreLimit: 10
+			scoreLimit: 10,
+			ballSpeed: 35,
+			errorRate: 0.1
 		};
 
 
@@ -109,6 +111,8 @@
 					this.x = baseX;
 					this.dy = +1;
 					this.speed = 10;
+					this.target = null;
+					this.fudgeFactor = game.errorRate;
 				}
 				else if(this.side === 'right') {
 					this.x = canvasWidth - baseX - this.w;
@@ -118,6 +122,49 @@
 
 			draw: function draw() {
 				ctx.fillRect(this.x, this.y, this.w, this.h);
+			},
+
+			setTarget: function setTarget() {
+				const distance = ball.x - (this.x + this.w);
+				const speed = (ball.dx * ball.speed) * -1;
+				const time = Math.ceil(distance / speed);
+				const frame = ball.dy * ball.speed;
+				const delta = time * frame;
+				const bottomEdge = canvasHeight - ball.h;
+				let prediction;
+
+				function predictImpact(offset, distance) {
+					if(offset + distance < 0) {
+						const newDistance = (distance + offset) * -1;
+						return predictImpact(0, newDistance);
+					}
+					else if(offset + distance > bottomEdge) {
+						const newDistance = (distance - (bottomEdge - offset)) * -1;
+						return predictImpact(bottomEdge, newDistance);
+					}
+					return offset + distance;
+				}
+				prediction = predictImpact(ball.y, delta);
+
+				const hit = Math.round(Math.random() + 0.5 - this.fudgeFactor);
+
+				if(hit) { // ball hits paddle
+					const range = this.h - ball.h;
+					this.target = prediction - (Math.random() * range);
+				}
+				else { // ball misses paddle
+					const options = [];
+					// paddle can go above ball
+					if(prediction > this.h) {
+						options.push({start: 0, end: prediction - this.h});
+					}
+					// paddle can go below ball
+					if(prediction + ball.h < canvasHeight - this.h) {
+						options.push({start: prediction + ball.h, end: canvasHeight - this.h});
+					}
+					console.log(options);
+					this.target = this.y; // TEMPORARY
+				}
 			},
 
 			move: function move(event) {
@@ -138,36 +185,15 @@
 					this.y = newPosition;
 				}
 				// AI controlled paddle
-				else {
-
+				else if(this.side === 'left') {
 					if(ball.dx < 0) {
-						if(!this.prediction) {
-							const distance = ball.x - (this.x + this.w);
-							const speed = (ball.dx * ball.speed) * -1;
-							const time = Math.ceil(distance / speed);
-							const frame = ball.dy * ball.speed;
-							const delta = time * frame;
-							const bottomEdge = canvasHeight - ball.h;
-
-							function predictImpact(offset, distance) {
-								if(offset + distance < 0) {
-									const newDistance = (distance + offset) * -1;
-									return predictImpact(0, newDistance);
-								}
-								else if(offset + distance > bottomEdge) {
-									const newDistance = (distance - (bottomEdge - offset)) * -1;
-									return predictImpact(bottomEdge, newDistance);
-								}
-								return offset + distance;
-							}
-							this.prediction = predictImpact(ball.y, delta);
+						if(!this.target) {
+							this.setTarget();
 						}
-						else {
-							this.y = this.prediction; // TEMPORARY
-						}
+						this.y = this.target; // TEMPORARY - need to move rather than teleport
 					}
 					else if(ball.dx > 0) {
-						this.prediction = null;
+						this.target = null;
 						this.y += this.dy * this.speed;
 					}
 
@@ -202,7 +228,7 @@
 				}
 				this.dx = dx * randomDirection();
 				this.dy = dy * randomDirection();
-				this.speed = 35;
+				this.speed = game.ballSpeed;
 			},
 
 			draw: function draw() {
@@ -247,11 +273,11 @@
 				// point scored
 				if(this.x < 0) {
 					this.x = 0;
-					// pointScored('p2');
+					pointScored('p2');
 				}
 				else if(this.x > canvasWidth - this.w) {
 					this.x = canvasWidth - this.w;
-					// pointScored('p1');
+					pointScored('p1');
 				}
 			}
 		};
@@ -313,6 +339,13 @@
 			scoreboard.draw();
 		};
 
+		function reset() {
+			p1.init('left');
+			p2.y = (canvasHeight - p2.h) / 2;
+			ball.init();
+			refresh();
+		}
+
 		function animate() {
 			if(!game.isPaused) {
 				p1.move();
@@ -334,9 +367,7 @@
 			// continue playing
 			if(scoreboard.score[0] < game.scoreLimit && scoreboard.score[1] < game.scoreLimit) {
 				setTimeout(function() {
-					ball.init();
-					p1.init();
-					refresh();
+					reset();
 					setTimeout(game.unpause, 500);
 				}, 1000);
 			}
@@ -346,10 +377,7 @@
 				scoreboard.y = (canvasHeight / 2) - 75;
 				canvas.addEventListener('click', function() {
 					scoreboard.init();
-					ball.init();
-					p1.init();
-					p2.y = (canvasHeight - p2.h) / 2;
-					refresh();
+					reset();
 					setTimeout(game.unpause, 500);
 				}, {once: true})
 			}
