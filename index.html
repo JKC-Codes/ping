@@ -132,6 +132,7 @@
 				const delta = time * frame;
 				const bottomEdge = canvasHeight - ball.h;
 				let prediction;
+				const hit = Math.round(Math.random() + 0.5 - this.fudgeFactor);
 
 				function predictImpact(offset, distance) {
 					if(offset + distance < 0) {
@@ -146,24 +147,24 @@
 				}
 				prediction = predictImpact(ball.y, delta);
 
-				const hit = Math.round(Math.random() + 0.5 - this.fudgeFactor);
-
 				if(hit) { // ball hits paddle
 					const range = this.h - ball.h;
 					this.target = prediction - (Math.random() * range);
 				}
 				else { // ball misses paddle
 					const options = [];
-					// paddle can go above ball
-					if(prediction > this.h) {
-						options.push({start: 0, end: prediction - this.h});
-					}
-					// paddle can go below ball
-					if(prediction + ball.h < canvasHeight - this.h) {
-						options.push({start: prediction + ball.h, end: canvasHeight - this.h});
-					}
-					console.log(options);
-					this.target = this.y; // TEMPORARY
+					const missDistance = Math.random() * this.h;
+					const top = this.h + missDistance;
+					const bottom = canvasHeight - this.h - missDistance;
+					// paddle can fit above ball
+					if(prediction > top) {
+						options.push(prediction - top);
+					};
+					// paddle can fit below ball
+					if(prediction + ball.h < bottom) {
+						options.push(prediction + ball.h + missDistance);
+					};
+					this.target = options[Math.floor(Math.random() * options.length)];
 				}
 			},
 
@@ -175,19 +176,12 @@
 					const offset = this.h / 2;
 					let newPosition = (mouse * pixel) - offset;
 
-					if(newPosition < 0) {
-						newPosition = 0;
-					}
-					else if (newPosition > canvasScale - this.h) {
-						newPosition = canvasScale - this.h;
-					}
-
 					this.y = newPosition;
 				}
 				// AI controlled paddle
 				else if(this.side === 'left') {
 					if(ball.dx < 0) {
-						if(!this.target) {
+						if(this.target === null) {
 							this.setTarget();
 						}
 						this.y = this.target; // TEMPORARY - need to move rather than teleport
@@ -196,15 +190,16 @@
 						this.target = null;
 						this.y += this.dy * this.speed;
 					}
+				}
 
-					if(this.y < 0) {
-						this.y = 0;
-						this.dy *= -1;
-					}
-					else if (this.y + this.h > canvasScale) {
-						this.y = canvasScale - this.h;
-						this.dy *= -1;
-					}
+				// Prevent paddles from exiting canvas
+				if(this.y < 0) {
+					this.y = 0;
+					this.dy *= -1;
+				}
+				else if (this.y + this.h > canvasScale) {
+					this.y = canvasScale - this.h;
+					this.dy *= -1;
 				}
 			}
 		};
