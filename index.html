@@ -184,7 +184,15 @@
 						if(this.target === null) {
 							this.setTarget();
 						}
-						this.y = this.target; // TEMPORARY - need to move rather than teleport
+
+						const withinRange =
+							this.y <= this.target + (this.speed * this.dy) &&
+							this.y >= this.target - (this.speed * this.dy);
+						if(!withinRange) {
+							const direction = this.target - this.y;
+							direction > 0 ? this.dy = 1 : this.dy = -1;
+							this.y += this.dy * this.speed;
+						}
 					}
 					else if(ball.dx > 0) {
 						this.target = null;
@@ -269,10 +277,12 @@
 				if(this.x < 0) {
 					this.x = 0;
 					pointScored('p2');
+					p1.fudgeFactor -= (game.errorRate * 0.05);
 				}
 				else if(this.x > canvasWidth - this.w) {
 					this.x = canvasWidth - this.w;
 					pointScored('p1');
+					p1.fudgeFactor += (game.errorRate * 0.05);
 				}
 			}
 		};
@@ -335,7 +345,8 @@
 		};
 
 		function reset() {
-			p1.init('left');
+			p1.y = (canvasHeight - p1.h) / 2;
+			p1.target = null;
 			p2.y = (canvasHeight - p2.h) / 2;
 			ball.init();
 			refresh();
